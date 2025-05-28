@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import datetime
 import os
+import webbrowser # Importado para abrir links
 
 # --- Configurações Globais para Medidores de Sensores ---
 UPDATE_INTERVAL = 2000  # Intervalo de atualização em milissegundos
@@ -27,10 +28,13 @@ COLOR_ALERT_GAUGE = "#F44336"
 COLOR_GAUGE_BACKGROUND = "#E0E0E0"
 COLOR_TEXT_ON_GAUGE = "#333333"
 COLOR_WINDOW_BG = "#ECEFF1"
-COLOR_FRAME_BG = "#FFFFFF" 
-COLOR_TAB_BG = "#FAFAFA"   
+COLOR_FRAME_BG = "#FFFFFF" # Usado para frames internos dos medidores
+COLOR_TAB_BG = "#FAFAFA"   # Cor de fundo para as abas
 COLOR_LABEL_TEXT = "#263238"
-COLOR_TREEVIEW_HEADING = "#E0E0E0"
+COLOR_TREEVIEW_HEADING = "#E0E0E0" # Cor para o cabeçalho da Treeview
+COLOR_LINK_BUTTON_BG = "#2196F3" # Azul para botões de link
+COLOR_LINK_BUTTON_FG = "white"
+
 FONT_MAIN_TITLE = ("Helvetica", 18, "bold")
 FONT_GAUGE_TITLE = ("Helvetica", 12)
 FONT_GAUGE_VALUE = ("Helvetica", 20, "bold")
@@ -39,7 +43,9 @@ FONT_TAB_HEADER = ("Helvetica", 11, "bold")
 FONT_LABEL_NORMAL = ('Helvetica', 10)
 FONT_BUTTON_NORMAL = ('Helvetica', 10, 'bold')
 FONT_INPUT_NORMAL = ('Helvetica', 10)
+FONT_LINK_BUTTON = ('Helvetica', 11, 'bold')
 
+# --- Dados dos Abrigos (Exemplo) ---
 SHELTERS_DATA = [
     {"id": "A001", "name": "Abrigo Central Alfa", "capacity_total": 100, "capacity_current": random.randint(10, 50),
      "resources": ["água", "comida", "primeiros_socorros"], "safety_level": "alta"},
@@ -231,10 +237,8 @@ class TemperaturePredictorInterface:
             if feature == 'day_of_year': entry_widget.insert(0, str(now.timetuple().tm_yday))
             elif feature == 'month': entry_widget.insert(0, str(now.month))
             elif feature == 'day_of_week': entry_widget.insert(0, str(now.weekday()))
-            # Para humidity e meanpressure, poderia buscar dados em tempo real se tivesse API, ou manter média
             elif not self.df_original.empty and feature in self.df_original.columns:
                  entry_widget.insert(0, f"{self.df_original[feature].mean():.1f}")
-
 
     def predict_temperature(self):
         if self.model is None:
@@ -284,37 +288,30 @@ class ShelterSimulatorInterface:
     def __init__(self, master_frame):
         self.master = master_frame
         self.master.configure(style="Tab.TFrame")
-        self.shelters = [dict(s) for s in SHELTERS_DATA] # Cópia para manipulação
+        self.shelters = [dict(s) for s in SHELTERS_DATA] 
 
-        # --- Frames Principais ---
         control_frame = ttk.LabelFrame(self.master, text="Critérios de Busca e Controlo", padding="10", style="TLabelframe")
         control_frame.pack(pady=10, padx=10, fill="x")
-
         list_frame = ttk.LabelFrame(self.master, text="Lista de Abrigos Disponíveis", padding="10", style="TLabelframe")
         list_frame.pack(pady=10, padx=10, fill="both", expand=True)
-
         recommendation_frame = ttk.LabelFrame(self.master, text="Abrigo Recomendado", padding="10", style="TLabelframe")
         recommendation_frame.pack(pady=10, padx=10, fill="x")
 
-        # --- Controlo e Inputs ---
-        input_criteria_frame = ttk.Frame(control_frame, style="TFrame") # Subframe para inputs
+        input_criteria_frame = ttk.Frame(control_frame, style="TFrame")
         input_criteria_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        
-        simulation_buttons_frame = ttk.Frame(control_frame, style="TFrame") # Subframe para botões de simulação
+        simulation_buttons_frame = ttk.Frame(control_frame, style="TFrame")
         simulation_buttons_frame.pack(side=tk.RIGHT, padx=5)
 
         ttk.Label(input_criteria_frame, text="Nº de Pessoas:", style="TLabel").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         self.num_people_var = tk.StringVar(value="1")
         self.num_people_entry = ttk.Entry(input_criteria_frame, textvariable=self.num_people_var, width=5, font=FONT_INPUT_NORMAL)
         self.num_people_entry.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-
         ttk.Label(input_criteria_frame, text="Prioridade Segurança:", style="TLabel").grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.safety_priority_var = tk.StringVar(value="Qualquer")
         safety_options = ["Qualquer"] + list(SAFETY_LEVEL_MAP.keys())
         self.safety_priority_combo = ttk.Combobox(input_criteria_frame, textvariable=self.safety_priority_var, values=safety_options, state="readonly", width=12, font=FONT_INPUT_NORMAL)
         self.safety_priority_combo.grid(row=1, column=1, padx=5, pady=5, sticky="w")
         
-        # Checkboxes para Recursos
         self.resource_vars = {}
         ttk.Label(input_criteria_frame, text="Recursos Essenciais:", style="TLabel").grid(row=2, column=0, columnspan=2, padx=5, pady=(10,0), sticky="w")
         resources_frame = ttk.Frame(input_criteria_frame, style="TFrame")
@@ -324,140 +321,131 @@ class ShelterSimulatorInterface:
             cb = ttk.Checkbutton(resources_frame, text=resource_name.replace("_", " ").capitalize(), variable=var, style="TCheckbutton")
             cb.pack(side=tk.LEFT, padx=3)
             self.resource_vars[resource_name] = var
-            if resource_name in ["água", "comida"]: var.set(True) # Pre-selecionar alguns comuns
+            if resource_name in ["água", "comida"]: var.set(True)
 
         self.find_shelter_button = ttk.Button(simulation_buttons_frame, text="Encontrar Melhor Abrigo", command=self.find_best_shelter, style="Accent.TButton")
         self.find_shelter_button.pack(pady=5, fill=tk.X)
         self.simulate_occupancy_button = ttk.Button(simulation_buttons_frame, text="Simular Ocupação", command=self.simulate_shelter_occupancy)
         self.simulate_occupancy_button.pack(pady=5, fill=tk.X)
 
-
-        # --- Lista de Abrigos (Treeview) ---
         cols = ("id", "name", "capacity_total", "capacity_current", "available", "safety_level", "resources")
         col_names = ("ID", "Nome do Abrigo", "Cap. Total", "Ocupação", "Vagas", "Segurança", "Recursos")
         col_widths = (50, 200, 80, 80, 60, 80, 200)
-
         self.shelter_tree = ttk.Treeview(list_frame, columns=cols, show="headings", height=7)
         for col, name, width in zip(cols, col_names, col_widths):
             self.shelter_tree.heading(col, text=name)
             self.shelter_tree.column(col, width=width, anchor='center')
-        
-        # Scrollbar para a Treeview
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.shelter_tree.yview)
         self.shelter_tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
         self.shelter_tree.pack(fill="both", expand=True)
-        self.shelter_tree.tag_configure('recommended', background='lightgreen') # Tag para destacar
-
-        # --- Abrigo Recomendado ---
+        self.shelter_tree.tag_configure('recommended', background='lightgreen')
         self.recommended_shelter_label = ttk.Label(recommendation_frame, text="Nenhum abrigo recomendado ainda. Ajuste os critérios e procure.", style="Result.TLabel", wraplength=600, justify="center", font=('Helvetica', 11))
         self.recommended_shelter_label.pack(pady=10)
-
         self.populate_shelter_tree()
 
     def populate_shelter_tree(self, recommended_id=None):
-        for i in self.shelter_tree.get_children():
-            self.shelter_tree.delete(i)
+        for i in self.shelter_tree.get_children(): self.shelter_tree.delete(i)
         for shelter in self.shelters:
             available = shelter["capacity_total"] - shelter["capacity_current"]
             resources_str = ", ".join(shelter["resources"]).capitalize()
-            
-            tags = ()
-            if recommended_id and shelter["id"] == recommended_id:
-                tags = ('recommended',)
-
-            self.shelter_tree.insert("", "end", values=(
-                shelter["id"],
-                shelter["name"],
-                shelter["capacity_total"],
-                shelter["capacity_current"],
-                max(0, available), # Não mostrar vagas negativas
-                shelter["safety_level"].capitalize(),
-                resources_str
-            ), tags=tags)
+            tags = ('recommended',) if recommended_id and shelter["id"] == recommended_id else ()
+            self.shelter_tree.insert("", "end", values=(shelter["id"], shelter["name"], shelter["capacity_total"], shelter["capacity_current"], max(0, available), shelter["safety_level"].capitalize(), resources_str), tags=tags)
 
     def simulate_shelter_occupancy(self):
         for shelter in self.shelters:
-            # Simula uma mudança na ocupação, mas não excede a capacidade total
             change = random.randint(-shelter["capacity_total"] // 4, shelter["capacity_total"] // 4)
-            shelter["capacity_current"] += change
-            shelter["capacity_current"] = max(0, min(shelter["capacity_current"], shelter["capacity_total"]))
+            shelter["capacity_current"] = max(0, min(shelter["capacity_current"] + change, shelter["capacity_total"]))
         self.populate_shelter_tree()
         self.recommended_shelter_label.config(text="Ocupação dos abrigos simulada. Procure novamente se necessário.")
-
 
     def find_best_shelter(self):
         try:
             num_people = int(self.num_people_var.get())
-            if num_people <= 0:
-                messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser maior que zero.")
-                return
-        except ValueError:
-            messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser um valor numérico.")
-            return
-
+            if num_people <= 0: messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser maior que zero."); return
+        except ValueError: messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser um valor numérico."); return
         required_resources = [res_name for res_name, var in self.resource_vars.items() if var.get()]
         safety_priority = self.safety_priority_var.get()
-
         candidate_shelters = []
         for shelter in self.shelters:
             available_capacity = shelter["capacity_total"] - shelter["capacity_current"]
-            if available_capacity < num_people:
-                continue # Não tem capacidade suficiente
-
-            # Verificar recursos
-            has_all_required_resources = True
-            for req_res in required_resources:
-                if req_res not in shelter["resources"]:
-                    has_all_required_resources = False
-                    break
-            if not has_all_required_resources:
-                continue
-
-            # Verificar prioridade de segurança
+            if available_capacity < num_people: continue
+            if not all(req_res in shelter["resources"] for req_res in required_resources): continue
             shelter_safety_val = SAFETY_LEVEL_MAP.get(shelter["safety_level"], 0)
             if safety_priority != "Qualquer":
                 priority_val = SAFETY_LEVEL_MAP.get(safety_priority, 0)
-                if shelter_safety_val < priority_val: # Se a prioridade é alta, segurança baixa/média não serve.
-                    continue
-                # Se a prioridade é média, segurança baixa não serve.
-                if priority_val == SAFETY_LEVEL_MAP["média"] and shelter_safety_val == SAFETY_LEVEL_MAP["baixa"]:
-                    continue
-
-
-            # Se passou por todos os filtros, é um candidato
-            # Adiciona uma pontuação para ordenação (maior é melhor)
-            # Pontuação: Nível de segurança (peso maior) + Vagas disponíveis (normalizado, peso menor)
+                if shelter_safety_val < priority_val: continue
+                if priority_val == SAFETY_LEVEL_MAP["média"] and shelter_safety_val == SAFETY_LEVEL_MAP["baixa"]: continue
             score = shelter_safety_val * 100 + (available_capacity - num_people) 
             candidate_shelters.append((score, shelter))
-        
         if not candidate_shelters:
             self.recommended_shelter_label.config(text="Nenhum abrigo encontrado que corresponda a todos os critérios.")
-            self.populate_shelter_tree() # Atualiza a treeview sem destaque
-            return
-
-        # Ordenar por pontuação (maior primeiro)
+            self.populate_shelter_tree(); return
         candidate_shelters.sort(key=lambda x: x[0], reverse=True)
         best_shelter_data = candidate_shelters[0][1]
-
-        recommendation_text = (
-            f"Melhor Abrigo Encontrado: {best_shelter_data['name']} (ID: {best_shelter_data['id']})\n"
-            f"Vagas Disponíveis: {best_shelter_data['capacity_total'] - best_shelter_data['capacity_current']}\n"
-            f"Nível de Segurança: {best_shelter_data['safety_level'].capitalize()}\n"
-            f"Recursos: {', '.join(best_shelter_data['resources']).capitalize()}"
-        )
+        recommendation_text = (f"Melhor Abrigo Encontrado: {best_shelter_data['name']} (ID: {best_shelter_data['id']})\n"
+                               f"Vagas Disponíveis: {best_shelter_data['capacity_total'] - best_shelter_data['capacity_current']}\n"
+                               f"Nível de Segurança: {best_shelter_data['safety_level'].capitalize()}\n"
+                               f"Recursos: {', '.join(best_shelter_data['resources']).capitalize()}")
         self.recommended_shelter_label.config(text=recommendation_text)
         self.populate_shelter_tree(recommended_id=best_shelter_data["id"])
+
+# --- Interface de Links Úteis ---
+class UsefulLinksInterface:
+    def __init__(self, master_frame):
+        self.master = master_frame
+        self.master.configure(style="Tab.TFrame")
+
+        title_label = ttk.Label(self.master, text="Links Úteis para Techanomachine", style="MainTitle.TLabel", anchor="center")
+        title_label.pack(pady=20, fill="x")
+
+        buttons_frame = ttk.Frame(self.master, style="Tab.TFrame")
+        buttons_frame.pack(expand=True, pady=20)
+
+        button_configs = [
+            {"text": "Techanomachine - Pesquisa Geral", "query": "techanomachine"},
+            {"text": "Techanomachine - Notícias", "query": "techanomachine notícias"},
+            {"text": "Techanomachine - Imagens", "query": "techanomachine", "type": "isch"}, # isch para imagens
+            {"text": "Techanomachine - Vídeos", "query": "techanomachine", "type": "vid"}    # vid para vídeos (ou tbm=vid)
+        ]
+
+        for config in button_configs:
+            btn = ttk.Button(
+                buttons_frame,
+                text=config["text"],
+                command=lambda q=config["query"], t=config.get("type"): self.open_link(q, t),
+                style="Link.TButton",
+                width=35
+            )
+            btn.pack(pady=10, ipady=5) # ipady para altura interna do botão
+
+    def open_link(self, query, search_type=None):
+        """Abre um link de pesquisa do Google numa nova aba do navegador."""
+        base_url = "https://www.google.com/search?q="
+        search_query = query.replace(" ", "+")
+        url = f"{base_url}{search_query}"
+        if search_type:
+            url += f"&tbm={search_type}" # tbm=isch (imagens), tbm=vid (vídeos), tbm=nws (notícias)
+            if search_type == "isch" and query.endswith(" notícias"): # Ajuste para notícias em imagens
+                 url = f"{base_url}{query.replace(' notícias', '').replace(' ', '+')}&tbm=isch" # Remove notícias da query de imagem
+            elif search_type == "vid" and query.endswith(" notícias"):
+                 url = f"{base_url}{query.replace(' notícias', '').replace(' ', '+')}&tbm=vid"
+
+
+        try:
+            webbrowser.open_new_tab(url)
+        except Exception as e:
+            messagebox.showerror("Erro ao Abrir Link", f"Não foi possível abrir o link:\n{e}")
 
 
 # --- Aplicação Principal com Abas ---
 class SensorDashboardApp:
     def __init__(self, root, model_pred, features_pred, df_pred):
         self.root = root
-        self.root.title("Dashboard de Sensores, Previsão e Abrigos")
-        self.root.geometry("950x750") # Aumentado para a nova aba
+        self.root.title("Dashboard Completo: Sensores, Previsão, Abrigos e Links")
+        self.root.geometry("1000x800") # Aumentado para a nova aba e melhor visualização
         self.root.configure(bg=COLOR_WINDOW_BG)
-        self.root.minsize(900, 700)
+        self.root.minsize(950, 750)
 
         style = ttk.Style()
         try: style.theme_use('clam')
@@ -482,6 +470,9 @@ class SensorDashboardApp:
         style.configure("TCombobox", font=FONT_INPUT_NORMAL)
         style.configure("TCheckbutton", background=COLOR_FRAME_BG, font=FONT_LABEL_NORMAL)
         style.configure('Treeview.Heading', background=COLOR_TREEVIEW_HEADING, font=('Helvetica', 10, 'bold'))
+        # Estilo para os botões de link
+        style.configure("Link.TButton", font=FONT_LINK_BUTTON, background=COLOR_LINK_BUTTON_BG, foreground=COLOR_LINK_BUTTON_FG)
+        style.map("Link.TButton", background=[('active', '#1976D2')]) # Cor mais escura ao clicar
 
 
         self.notebook = ttk.Notebook(self.root)
@@ -499,10 +490,15 @@ class SensorDashboardApp:
             self.notebook.add(error_tab_frame, text=" Previsão Indisponível ")
             ttk.Label(error_tab_frame, text="A funcionalidade de previsão de temperatura não pôde ser carregada.", font=("Helvetica", 12), style="TLabel", wraplength=380, justify="center").pack(expand=True, padx=20, pady=20)
 
-        # Aba Simulador de Abrigo
         self.shelter_sim_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
         self.notebook.add(self.shelter_sim_tab_frame, text=" Simulador de Abrigo ")
         self.shelter_sim_ui = ShelterSimulatorInterface(self.shelter_sim_tab_frame)
+
+        # Aba de Links Úteis
+        self.useful_links_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
+        self.notebook.add(self.useful_links_tab_frame, text=" Links Úteis ")
+        self.useful_links_ui = UsefulLinksInterface(self.useful_links_tab_frame)
+
 
         self.notebook.pack(expand=True, fill='both', padx=10, pady=10)
 
