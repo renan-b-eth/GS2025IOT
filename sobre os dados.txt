@@ -1,0 +1,5 @@
+O Link dos databases está no drive abaixo:
+
+https://drive.google.com/drive/folders/146Tli26CM0Rsx8EuXmXQz4dtsEKmjbo5?usp=drive_link
+
+ele foi usado para o treinamento de maquina no teachablemachine
