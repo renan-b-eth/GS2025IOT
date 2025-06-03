@@ -13,9 +13,8 @@ import random
 
 # --- Configurações de Arquivos ---
 TRAIN_DATA_FILE = 'DailyDelhiClimateTrain.csv'
-TEST_DATA_FILE = 'DailyDelhiClimateTest.csv' # Usaremos este para simular dados de sensores
+TEST_DATA_FILE = 'DailyDelhiClimateTest.csv'
 
-# --- PARTE 1: Carregamento e Pré-processamento dos Dados de TREINO ---
 
 # Verificar se o arquivo de treino existe
 if not os.path.exists(TRAIN_DATA_FILE):
@@ -58,14 +57,11 @@ try:
     print(f"Variável alvo para TREINO: {target}")
     print(f"Tamanho do conjunto de treino: {len(X_train)}")
 
-    # --- PARTE 2: Treinamento do Modelo ---
+    #Treinamento do Modelo
     model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
     print("\nIniciando o treinamento do modelo RandomForestRegressor...")
     model.fit(X_train, y_train)
     print("Modelo treinado com sucesso!")
-
-    # Não faremos avaliação direta com X_test aqui, pois usaremos o 'DailyDelhiClimateTest.csv'
-    # para a simulação, que será nosso "conjunto de teste em tempo real".
     
     # --- Carregar e Pré-processar os Dados de TESTE (para simulação) ---
     if not os.path.exists(TEST_DATA_FILE):
@@ -85,7 +81,7 @@ try:
     df_test_sim['day_of_week'] = df_test_sim['date'].dt.dayofweek
 
     # Verificar se as colunas essenciais existem no dataset de teste de simulação
-    for col in features + [target]: # target 'meantemp' também é necessário para o gráfico real vs predito
+    for col in features + [target]: 
         if col not in df_test_sim.columns:
             raise ValueError(f"A coluna '{col}' não foi encontrada no dataset de TESTE (simulação). Verifique o nome da coluna no CSV.")
     
@@ -104,14 +100,13 @@ try:
         if feature in df_test_sim.columns:
             ranges[feature] = (df_test_sim[feature].min(), df_test_sim[feature].max())
         else:
-            # Fallback se a feature não existir, usar um range genérico ou do treino
+           
             print(f"Aviso: Coluna '{feature}' não encontrada em {TEST_DATA_FILE}. Usando range do treino ou genérico.")
             if feature in df_train.columns:
                  ranges[feature] = (df_train[feature].min(), df_train[feature].max())
             else:
-                 ranges[feature] = (0, 100) # Exemplo genérico
+                 ranges[feature] = (0, 100)
     
-    # Para o gráfico inicial, usar o df_train
     df_for_initial_plot = df_train
 
 
@@ -121,7 +116,7 @@ except Exception as e:
     exit()
 
 
-# --- PARTE 3: Simulador com Interface Gráfica (Tkinter) ---
+#Simulador com Interface Gráfica
 
 class TemperaturePredictorApp:
     def __init__(self, master, model, features, df_train_original, df_test_sim, ranges):
@@ -132,11 +127,11 @@ class TemperaturePredictorApp:
 
         self.model = model
         self.features = features
-        self.df_train_original = df_train_original.copy() # Para o gráfico histórico
-        self.df_test_sim = df_test_sim.copy() # Para pegar dados de simulação
-        self.ranges = ranges # Ranges de variação para umidade, pressão, vento
+        self.df_train_original = df_train_original.copy() 
+        self.df_test_sim = df_test_sim.copy()
+        self.ranges = ranges
         
-        self.current_sim_idx = 0 # Índice para percorrer o df_test_sim para dados de sensores
+        self.current_sim_idx = 0 
         self.max_sim_idx = len(self.df_test_sim) - 1
 
         self.style = ttk.Style()
@@ -183,7 +178,6 @@ class TemperaturePredictorApp:
         self.plot_initial_data()
         self.job_id = None
         
-        # Define os valores iniciais para simulação
         self.set_initial_simulated_values()
 
     def create_input_widgets(self, parent_frame):
@@ -207,19 +201,19 @@ class TemperaturePredictorApp:
         self.get_simulated_values_button.grid(row=len(self.features), column=0, columnspan=2, pady=10)
 
     def set_initial_simulated_values(self):
-        # Pega uma linha aleatória do df_test_sim para iniciar
+       
         initial_data = self.df_test_sim.sample(1).iloc[0]
         self._update_input_fields_from_series(initial_data)
 
     def get_next_simulated_values(self):
-        # Avança para a próxima linha no df_test_sim ou volta ao início
+        
         self.current_sim_idx = (self.current_sim_idx + 1) % len(self.df_test_sim)
         simulated_data = self.df_test_sim.iloc[self.current_sim_idx]
         self._update_input_fields_from_series(simulated_data)
-        self.predict_temperature_manual() # Faz a predição imediatamente após carregar novos dados
+        self.predict_temperature_manual() 
 
     def _update_input_fields_from_series(self, data_series):
-        # Preenche os campos de entrada com os valores da série de dados
+        
         for feature in self.features:
             if feature in data_series:
                 self.entry_widgets[feature].delete(0, tk.END)
@@ -233,8 +227,8 @@ class TemperaturePredictorApp:
         self._perform_prediction(manual_trigger=True)
 
     def predict_temperature_auto(self):
-        # Esta função será chamada pelo timer para simular novos dados do sensor
-        self.get_next_simulated_values() # Carrega os próximos dados de simulação
+       
+        self.get_next_simulated_values()
         self._perform_prediction(manual_trigger=False)
 
     def _perform_prediction(self, manual_trigger):
@@ -248,7 +242,7 @@ class TemperaturePredictorApp:
                 value = float(value_str)
                 input_values[feature] = value
             
-            # Validações básicas (ajuste conforme a necessidade do seu dataset)
+            # Validações básicas
             if not (self.ranges['humidity'][0] <= input_values.get('humidity', 50) <= self.ranges['humidity'][1]):
                 if manual_trigger: messagebox.showerror("Erro de Entrada", f"Umidade deve estar entre {self.ranges['humidity'][0]:.1f} e {self.ranges['humidity'][1]:.1f}.")
                 return
@@ -273,15 +267,15 @@ class TemperaturePredictorApp:
 
             self.result_label.config(text=f"Temperatura Média Predita: {predicted_temp:.2f} °C")
 
-            # Obter a temperatura real para comparação (do df_test_sim)
+            # Obter a temperatura real para comparação
             real_temp = self.df_test_sim.iloc[self.current_sim_idx]['meantemp']
             self.real_temp_label.config(text=f"Temperatura Real (Simulada): {real_temp:.2f} °C")
 
             try:
-                # Usar a data real do df_test_sim para o ponto no gráfico
+               
                 simulated_date = self.df_test_sim.iloc[self.current_sim_idx]['date']
             except Exception:
-                 simulated_date = datetime.datetime.now() # Fallback
+                 simulated_date = datetime.datetime.now()
 
             self.update_plot(simulated_date, predicted_temp, real_temp)
 
@@ -289,7 +283,7 @@ class TemperaturePredictorApp:
             if manual_trigger: messagebox.showerror("Erro de Entrada", "Por favor, insira valores numéricos válidos para todas as entradas.")
         except Exception as e:
             if manual_trigger: messagebox.showerror("Erro", f"Ocorreu um erro na predição: {e}")
-            else: print(f"Erro na atualização automática: {e}") # Imprimir erro no console para auto-update
+            else: print(f"Erro na atualização automática: {e}")
 
     def plot_initial_data(self):
         self.ax.clear()
@@ -306,9 +300,9 @@ class TemperaturePredictorApp:
         self.ax.clear()
         self.ax.plot(self.df_train_original['date'], self.df_train_original['meantemp'], label='Histórico de Temperatura Média (Treino)', color='skyblue')
         
-        # Plotar o ponto predito
+        
         self.ax.plot(prediction_date, predicted_temp, 'ro', markersize=10, label=f'Predição: {predicted_temp:.2f}°C')
-        # Plotar o ponto real (do sensor simulado)
+       
         self.ax.plot(prediction_date, real_temp, 'go', markersize=10, label=f'Real: {real_temp:.2f}°C')
         
         self.ax.set_xlabel("Data")
@@ -330,8 +324,8 @@ class TemperaturePredictorApp:
                 print("Atualização automática desativada.")
 
     def schedule_update(self):
-        self.predict_temperature_auto() # Chama a função que simula dados e faz a predição
-        self.job_id = self.master.after(1000, self.schedule_update) # Agenda a próxima atualização
+        self.predict_temperature_auto()
+        self.job_id = self.master.after(1000, self.schedule_update)
 
 
 if __name__ == "__main__":

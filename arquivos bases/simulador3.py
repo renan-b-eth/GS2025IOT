@@ -12,23 +12,23 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import datetime
 import os
 
-# --- Configurações Globais para Medidores de Sensores ---
-UPDATE_INTERVAL = 2000  # Intervalo de atualização em milissegundos
-TEMP_MIN, TEMP_MAX = 10.0, 40.0  # Temperatura em °C (ajustado para incluir valores do dataset)
-OCC_MIN, OCC_MAX = 0, 100      # Ocupação em %
-HUM_MIN_SENSOR, HUM_MAX_SENSOR = 20, 100 # Umidade em % (para o sensor, diferente do input da previsão)
+
+UPDATE_INTERVAL = 2000  
+TEMP_MIN, TEMP_MAX = 10.0, 40.0  
+OCC_MIN, OCC_MAX = 0, 100    
+HUM_MIN_SENSOR, HUM_MAX_SENSOR = 20, 100
 
 TEMP_ALERT_THRESHOLD = 35.0
 OCC_ALERT_THRESHOLD = 80
-HUM_ALERT_THRESHOLD_SENSOR = 85 # Limite para umidade alta no sensor
+HUM_ALERT_THRESHOLD_SENSOR = 85 
 
 COLOR_NORMAL_GAUGE = "#4CAF50"
 COLOR_ALERT_GAUGE = "#F44336"
 COLOR_GAUGE_BACKGROUND = "#E0E0E0"
 COLOR_TEXT_ON_GAUGE = "#333333"
 COLOR_WINDOW_BG = "#ECEFF1"
-COLOR_FRAME_BG = "#FFFFFF" # Usado para frames internos dos medidores
-COLOR_TAB_BG = "#FAFAFA"   # Cor de fundo para as abas
+COLOR_FRAME_BG = "#FFFFFF" 
+COLOR_TAB_BG = "#FAFAFA"  
 COLOR_LABEL_TEXT = "#263238"
 
 FONT_MAIN_TITLE = ("Helvetica", 18, "bold")
@@ -37,7 +37,6 @@ FONT_GAUGE_VALUE = ("Helvetica", 20, "bold")
 FONT_GAUGE_MINMAX = ("Helvetica", 9)
 FONT_TAB_HEADER = ("Helvetica", 11, "bold")
 
-# --- PARTE 1: Carregamento e Pré-processamento dos Dados para Previsão ---
 DATA_FILE = 'DailyDelhiClimateTrain.csv'
 model_predictor = None
 features_predictor = []
@@ -62,12 +61,11 @@ def load_and_train_prediction_model():
         df['year'] = df['date'].dt.year
         df['day_of_week'] = df['date'].dt.dayofweek
 
-        # Usaremos humidity, meanpressure, day_of_year, month, day_of_week para prever meantemp
-        # Garantir que as colunas existem e têm os nomes corretos
+      
         required_cols = ['humidity', 'meanpressure', 'meantemp', 'date']
         for col in required_cols:
             if col not in df.columns:
-                # Tentar nomes alternativos comuns se os originais não existirem
+                
                 if col == 'meanpressure' and 'pressure' in df.columns:
                     df.rename(columns={'pressure': 'meanpressure'}, inplace=True)
                 elif col == 'meantemp' and 'temperature' in df.columns:
@@ -88,7 +86,7 @@ def load_and_train_prediction_model():
                  return False
 
 
-        df_predictor_original = df.copy() # Guardar para gráficos
+        df_predictor_original = df.copy()
         df.dropna(subset=features_predictor + [target_predictor], inplace=True)
 
         if df.empty:
@@ -103,7 +101,7 @@ def load_and_train_prediction_model():
         model_predictor = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
         model_predictor.fit(X_train, y_train)
 
-        # Avaliação (opcional, pode ser logado no console)
+        
         y_pred_test = model_predictor.predict(X_test)
         mse = mean_squared_error(y_test, y_pred_test)
         r2 = r2_score(y_test, y_pred_test)
@@ -117,7 +115,6 @@ def load_and_train_prediction_model():
                              f"Ocorreu um erro durante o carregamento ou treinamento do modelo de previsão:\n{e}")
         return False
 
-# --- Geração de Dados Aleatórios para Sensores (Medidores) ---
 def get_random_temperature_sensor():
     return round(random.uniform(TEMP_MIN, TEMP_MAX), 1)
 
@@ -127,7 +124,7 @@ def get_random_occupancy_sensor():
 def get_random_humidity_sensor():
     return random.randint(HUM_MIN_SENSOR, HUM_MAX_SENSOR)
 
-# --- Widget de Medidor (Gauge) ---
+
 class Gauge(ttk.Frame):
     def __init__(self, parent, title, unit, min_val, max_val, alert_threshold, is_float=False):
         super().__init__(parent, padding="10 10 10 10")
@@ -141,9 +138,9 @@ class Gauge(ttk.Frame):
         self.current_value = min_val
         self.is_float = is_float
 
-        self.canvas_width = 150 # Reduzido para caber melhor
+        self.canvas_width = 150
         self.gauge_thickness = 16
-        self.canvas_height = (self.canvas_width / 2) + self.gauge_thickness + 15 # Ajustado
+        self.canvas_height = (self.canvas_width / 2) + self.gauge_thickness + 15
 
         self.title_label = ttk.Label(self, text=self.title_text, font=FONT_GAUGE_TITLE, style="GaugeTitle.TLabel")
         self.title_label.pack(pady=(0, 6))
@@ -186,7 +183,7 @@ class Gauge(ttk.Frame):
             )
 
         arc_center_y = arc_bbox_y1 + (arc_bbox_y2 - arc_bbox_y1) / 2
-        text_offset_y = 10 # Deslocamento para os textos min/max
+        text_offset_y = 10 
         self.canvas.create_text(arc_bbox_x1 - 5, arc_center_y + text_offset_y, text=str(self.min_val),
                                 anchor="ne", font=FONT_GAUGE_MINMAX, fill=COLOR_TEXT_ON_GAUGE)
         self.canvas.create_text(arc_bbox_x2 + 5, arc_center_y + text_offset_y, text=str(self.max_val),
@@ -198,17 +195,16 @@ class Gauge(ttk.Frame):
         self.value_label.config(text=value_text_formatted)
         self._draw_gauge()
 
-# --- Interface de Previsão de Temperatura (Adaptada) ---
 class TemperaturePredictorInterface:
     def __init__(self, master_frame, model, features_list, df_hist_data):
         self.master = master_frame
-        self.master.configure(style="Tab.TFrame") # Aplicar estilo à aba
+        self.master.configure(style="Tab.TFrame") 
 
         self.model = model
         self.features = features_list
-        self.df_original = df_hist_data.copy() if df_hist_data is not None else pd.DataFrame() # Lidar com df nulo
+        self.df_original = df_hist_data.copy() if df_hist_data is not None else pd.DataFrame()
 
-        # Frame de Entrada
+       
         self.input_frame = ttk.LabelFrame(self.master, text="Entrada de Dados para Predição", padding="15", style="TLabelframe")
         self.input_frame.pack(pady=10, padx=20, fill="x")
 
@@ -227,8 +223,8 @@ class TemperaturePredictorInterface:
         self.chart_frame = ttk.LabelFrame(self.master, text="Visualização da Predição", padding="15", style="TLabelframe")
         self.chart_frame.pack(pady=10, padx=20, fill="both", expand=True)
 
-        self.fig, self.ax = plt.subplots(figsize=(7, 4)) # Ajustar tamanho
-        plt.style.use('seaborn-v0_8-whitegrid') # Estilo de gráfico
+        self.fig, self.ax = plt.subplots(figsize=(7, 4)) 
+        plt.style.use('seaborn-v0_8-whitegrid') 
         self.canvas_plot = FigureCanvasTkAgg(self.fig, master=self.chart_frame)
         self.canvas_widget = self.canvas_plot.get_tk_widget()
         self.canvas_widget.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -248,7 +244,7 @@ class TemperaturePredictorInterface:
         }
         self.entry_widgets = {}
         
-        # Organizar em duas colunas para melhor uso do espaço
+        
         num_features = len(self.features)
         cols = 2
         rows_per_col = (num_features + cols -1) // cols
@@ -256,7 +252,7 @@ class TemperaturePredictorInterface:
 
         for i, feature in enumerate(self.features):
             row_idx = i % rows_per_col
-            col_idx = (i // rows_per_col) * 2 # Multiplica por 2 para label + entry
+            col_idx = (i // rows_per_col) * 2 
 
             ttk.Label(parent_frame, text=f"{feature_labels.get(feature, feature.capitalize())}:").grid(
                 row=row_idx, column=col_idx, padx=5, pady=5, sticky="w")
@@ -264,7 +260,7 @@ class TemperaturePredictorInterface:
             entry.grid(row=row_idx, column=col_idx + 1, padx=5, pady=5, sticky="ew")
             self.entry_widgets[feature] = entry
 
-            # Preenchimento com valores padrão/atuais
+            
             if not self.df_original.empty:
                 if feature in ['humidity', 'meanpressure'] and feature in self.df_original.columns:
                     mean_val = self.df_original[feature].mean()
@@ -273,9 +269,9 @@ class TemperaturePredictorInterface:
             elif feature == 'month': entry.insert(0, str(datetime.datetime.now().month))
             elif feature == 'day_of_week': entry.insert(0, str(datetime.datetime.now().weekday()))
         
-        # Configurar colunas do grid para expandir
+        
         parent_frame.columnconfigure(1, weight=1)
-        if num_features > rows_per_col: # Se houver uma segunda coluna de entradas
+        if num_features > rows_per_col:
              parent_frame.columnconfigure(3, weight=1)
 
 
@@ -306,11 +302,11 @@ class TemperaturePredictorInterface:
                     return
                 input_values[feature] = float(value_str)
             
-            # Validações (ajustar conforme necessário)
+            
             if not (0 <= input_values.get('humidity', 50) <= 100):
                 messagebox.showerror("Erro de Entrada", "Umidade deve estar entre 0 e 100.")
                 return
-            # Adicionar mais validações se necessário para outras features
+            
 
             input_data = pd.DataFrame([input_values], columns=self.features)
             predicted_temp = self.model.predict(input_data)[0]
@@ -319,24 +315,23 @@ class TemperaturePredictorInterface:
             if not self.df_original.empty:
                 try:
                     current_year = self.df_original['date'].dt.year.max() if 'date' in self.df_original.columns else datetime.datetime.now().year
-                    # Lidar com dia do ano 366 em anos não bissextos para visualização
+                    
                     day_of_year_input = int(input_values['day_of_year'])
                     if not (datetime.date(current_year, 1, 1) + datetime.timedelta(days=365)).year == current_year and day_of_year_input == 366: # Não é bissexto e dia 366
-                        day_of_year_viz = 365 # Visualiza como último dia do ano
+                        day_of_year_viz = 365 
                     else:
                         day_of_year_viz = day_of_year_input
 
                     simulated_date = datetime.datetime(current_year, 1, 1) + datetime.timedelta(days=day_of_year_viz - 1)
                     
-                    # Ajustar mês da data simulada para corresponder ao input, se possível, para melhor visualização
-                    # Isso ajuda se o dia do ano não corresponder exatamente ao mês para o ano base
+                    
                     try:
                         simulated_date = simulated_date.replace(month=int(input_values['month']))
-                    except ValueError: # Dia pode ser inválido para o mês (ex: 31 de Fev), manter data baseada no dia do ano
+                    except ValueError: 
                         pass
 
 
-                except ValueError as ve: # Ex: data inválida como 30 de Fev
+                except ValueError as ve: 
                      messagebox.showwarning("Aviso de Data", f"Não foi possível gerar data exata para visualização ({ve}). Usando data aproximada.")
                      simulated_date = datetime.datetime(current_year, int(input_values['month']), 1) # Usa o primeiro do mês
 
@@ -362,29 +357,29 @@ class TemperaturePredictorInterface:
         self.canvas_plot.draw()
 
     def update_plot(self, prediction_date, predicted_temp):
-        self.plot_initial_data() # Redesenha o histórico
+        self.plot_initial_data() 
         self.ax.plot(prediction_date, predicted_temp, 'o', color='red', markersize=8,
                      label=f'Predição ({prediction_date.strftime("%d/%m")}): {predicted_temp:.2f}°C')
         self.ax.legend(loc='upper left')
         self.fig.autofmt_xdate()
         self.canvas_plot.draw()
 
-# --- Aplicação Principal com Abas ---
+
 class SensorDashboardApp:
     def __init__(self, root, model_pred, features_pred, df_pred):
         self.root = root
         self.root.title("Dashboard de Sensores e Previsão Climática")
-        # Ajustar geometria para acomodar ambas as abas
-        self.root.geometry("900x700") # Aumentado
+        
+        self.root.geometry("900x700") 
         self.root.configure(bg=COLOR_WINDOW_BG)
-        self.root.minsize(800, 600) # Tamanho mínimo
+        self.root.minsize(800, 600) 
 
-        # --- Estilos ttk ---
+        
         style = ttk.Style()
         try:
             style.theme_use('clam')
         except tk.TclError:
-            style.theme_use(style.theme_names()[0]) # Fallback
+            style.theme_use(style.theme_names()[0])
 
         style.configure("TFrame", background=COLOR_WINDOW_BG)
         style.configure("Gauge.TFrame", background=COLOR_FRAME_BG, relief="groove", borderwidth=1)
@@ -397,10 +392,10 @@ class SensorDashboardApp:
         style.configure("TNotebook", background=COLOR_WINDOW_BG, borderwidth=0)
         style.configure("TNotebook.Tab", font=FONT_TAB_HEADER, padding=[10, 5], background=COLOR_TAB_BG, foreground="#555555")
         style.map("TNotebook.Tab",
-            background=[("selected", COLOR_FRAME_BG)], # Aba selecionada mais clara
-            foreground=[("selected", "#00796B")]) # Texto da aba selecionada
+            background=[("selected", COLOR_FRAME_BG)], 
+            foreground=[("selected", "#00796B")]) 
         
-        style.configure("Tab.TFrame", background=COLOR_FRAME_BG) # Fundo dos frames dentro das abas
+        style.configure("Tab.TFrame", background=COLOR_FRAME_BG) 
         style.configure("TLabelframe", background=COLOR_FRAME_BG, bordercolor="#BDBDBD", relief="solid")
         style.configure("TLabelframe.Label", background=COLOR_FRAME_BG, foreground="#455A64", font=('Helvetica', 11, 'bold'))
         style.configure("Accent.TButton", font=('Helvetica', 10, 'bold'), background="#00796B", foreground="white") # Botão de destaque
@@ -408,21 +403,21 @@ class SensorDashboardApp:
         style.configure("Result.TLabel", background=COLOR_FRAME_BG)
 
 
-        # --- Notebook para Abas ---
+        
         self.notebook = ttk.Notebook(self.root)
 
-        # Aba 1: Sensores em Tempo Real
+       
         self.sensors_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
         self.notebook.add(self.sensors_tab_frame, text=" Sensores em Tempo Real ")
         self._setup_sensors_ui(self.sensors_tab_frame)
 
-        # Aba 2: Previsão de Temperatura
-        if model_pred is not None: # Só adiciona a aba se o modelo foi carregado
+       
+        if model_pred is not None:
             self.predictor_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
             self.notebook.add(self.predictor_tab_frame, text=" Previsão de Temperatura ")
             self.temp_predictor_ui = TemperaturePredictorInterface(self.predictor_tab_frame, model_pred, features_pred, df_pred)
         else:
-             # Opcional: Adicionar uma aba de "Erro" ou simplesmente não adicionar a aba de previsão
+            
             error_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
             self.notebook.add(error_tab_frame, text=" Previsão Indisponível ")
             ttk.Label(error_tab_frame, text="A funcionalidade de previsão de temperatura não pôde ser carregada.",
@@ -466,15 +461,13 @@ class SensorDashboardApp:
 
         self.root.after(UPDATE_INTERVAL, self.update_all_sensors_periodically)
 
-# --- Ponto de Entrada Principal ---
+
 if __name__ == "__main__":
-    # Tenta carregar dados e treinar o modelo ANTES de iniciar a GUI
+    
     model_ready = load_and_train_prediction_model()
 
-    # Só inicia a GUI se o modelo estiver pronto ou se quisermos mostrar a parte dos sensores mesmo assim.
-    # Neste caso, a aba de previsão será desabilitada ou mostrará erro se model_ready for False.
     
     root_app = tk.Tk()
-    # Passa o modelo, features e df para a app principal. Serão None se o carregamento falhar.
+   
     app_instance = SensorDashboardApp(root_app, model_predictor, features_predictor, df_predictor_original)
     root_app.mainloop()

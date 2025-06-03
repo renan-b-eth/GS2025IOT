@@ -11,28 +11,28 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import datetime
 import os
-import webbrowser # Importado para abrir links
+import webbrowser
 
-# --- Configurações Globais para Medidores de Sensores ---
-UPDATE_INTERVAL = 2000  # Intervalo de atualização em milissegundos
-TEMP_MIN, TEMP_MAX = 10.0, 40.0  # Temperatura em °C (ajustado para incluir valores do dataset)
-OCC_MIN, OCC_MAX = 0, 100      # Ocupação em %
-HUM_MIN_SENSOR, HUM_MAX_SENSOR = 20, 100 # Umidade em % (para o sensor, diferente do input da previsão)
+
+UPDATE_INTERVAL = 2000
+TEMP_MIN, TEMP_MAX = 10.0, 40.0
+OCC_MIN, OCC_MAX = 0, 100
+HUM_MIN_SENSOR, HUM_MAX_SENSOR = 20, 100
 
 TEMP_ALERT_THRESHOLD = 35.0
 OCC_ALERT_THRESHOLD = 80
-HUM_ALERT_THRESHOLD_SENSOR = 85 # Limite para umidade alta no sensor
+HUM_ALERT_THRESHOLD_SENSOR = 85
 
 COLOR_NORMAL_GAUGE = "#4CAF50"
 COLOR_ALERT_GAUGE = "#F44336"
 COLOR_GAUGE_BACKGROUND = "#E0E0E0"
 COLOR_TEXT_ON_GAUGE = "#333333"
 COLOR_WINDOW_BG = "#ECEFF1"
-COLOR_FRAME_BG = "#FFFFFF" # Usado para frames internos dos medidores
-COLOR_TAB_BG = "#FAFAFA"   # Cor de fundo para as abas
+COLOR_FRAME_BG = "#FFFFFF"
+COLOR_TAB_BG = "#FAFAFA"
 COLOR_LABEL_TEXT = "#263238"
-COLOR_TREEVIEW_HEADING = "#E0E0E0" # Cor para o cabeçalho da Treeview
-COLOR_LINK_BUTTON_BG = "#2196F3" # Azul para botões de link
+COLOR_TREEVIEW_HEADING = "#E0E0E0"
+COLOR_LINK_BUTTON_BG = "#2196F3"
 COLOR_LINK_BUTTON_FG = "white"
 
 FONT_MAIN_TITLE = ("Helvetica", 18, "bold")
@@ -45,7 +45,6 @@ FONT_BUTTON_NORMAL = ('Helvetica', 10, 'bold')
 FONT_INPUT_NORMAL = ('Helvetica', 10)
 FONT_LINK_BUTTON = ('Helvetica', 11, 'bold')
 
-# --- Dados dos Abrigos (Exemplo) ---
 SHELTERS_DATA = [
     {"id": "A001", "name": "Abrigo Central Alfa", "capacity_total": 100, "capacity_current": random.randint(10, 50),
      "resources": ["água", "comida", "primeiros_socorros"], "safety_level": "alta"},
@@ -63,7 +62,6 @@ SAFETY_LEVEL_MAP = {"alta": 3, "média": 2, "baixa": 1}
 SAFETY_LEVEL_MAP_INV = {v: k for k, v in SAFETY_LEVEL_MAP.items()}
 
 
-# --- PARTE 1: Carregamento e Pré-processamento dos Dados para Previsão ---
 DATA_FILE = 'DailyDelhiClimateTrain.csv'
 model_predictor = None
 features_predictor = []
@@ -92,7 +90,7 @@ def load_and_train_prediction_model():
                 if col == 'meanpressure' and 'pressure' in df.columns:
                     df.rename(columns={'pressure': 'meanpressure'}, inplace=True)
                 elif col == 'meantemp' and 'temperature' in df.columns:
-                     df.rename(columns={'temperature': 'meantemp'}, inplace=True)
+                    df.rename(columns={'temperature': 'meantemp'}, inplace=True)
                 else:
                     messagebox.showerror("Erro de Coluna",
                                          f"A coluna '{col}' (ou uma alternativa válida) não foi encontrada no dataset '{DATA_FILE}'.\n"
@@ -104,8 +102,8 @@ def load_and_train_prediction_model():
 
         for col in features_predictor + [target_predictor]:
             if col not in df.columns:
-                 messagebox.showerror("Erro de Coluna", f"Coluna '{col}' ainda ausente após verificações.")
-                 return False
+                messagebox.showerror("Erro de Coluna", f"Coluna '{col}' ainda ausente após verificações.")
+                return False
 
         df_predictor_original = df.copy()
         df.dropna(subset=features_predictor + [target_predictor], inplace=True)
@@ -131,7 +129,6 @@ def load_and_train_prediction_model():
                              f"Ocorreu um erro durante o carregamento ou treino do modelo de previsão:\n{e}")
         return False
 
-# --- Geração de Dados Aleatórios para Sensores (Medidores) ---
 def get_random_temperature_sensor():
     return round(random.uniform(TEMP_MIN, TEMP_MAX), 1)
 def get_random_occupancy_sensor():
@@ -139,7 +136,6 @@ def get_random_occupancy_sensor():
 def get_random_humidity_sensor():
     return random.randint(HUM_MIN_SENSOR, HUM_MAX_SENSOR)
 
-# --- Widget de Medidor (Gauge) ---
 class Gauge(ttk.Frame):
     def __init__(self, parent, title, unit, min_val, max_val, alert_threshold, is_float=False):
         super().__init__(parent, padding="10 10 10 10")
@@ -180,7 +176,6 @@ class Gauge(ttk.Frame):
         self.value_label.config(text=value_text_formatted)
         self._draw_gauge()
 
-# --- Interface de Previsão de Temperatura ---
 class TemperaturePredictorInterface:
     def __init__(self, master_frame, model, features_list, df_hist_data):
         self.master = master_frame
@@ -200,7 +195,7 @@ class TemperaturePredictorInterface:
         self.chart_frame.pack(pady=10, padx=20, fill="both", expand=True)
         self.fig, self.ax = plt.subplots(figsize=(7, 4))
         try: plt.style.use('seaborn-v0_8-whitegrid')
-        except: pass # Usa o estilo default se seaborn não estiver disponível
+        except: pass
         self.canvas_plot = FigureCanvasTkAgg(self.fig, master=self.chart_frame)
         self.canvas_widget = self.canvas_plot.get_tk_widget()
         self.canvas_widget.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -238,7 +233,7 @@ class TemperaturePredictorInterface:
             elif feature == 'month': entry_widget.insert(0, str(now.month))
             elif feature == 'day_of_week': entry_widget.insert(0, str(now.weekday()))
             elif not self.df_original.empty and feature in self.df_original.columns:
-                 entry_widget.insert(0, f"{self.df_original[feature].mean():.1f}")
+                entry_widget.insert(0, f"{self.df_original[feature].mean():.1f}")
 
     def predict_temperature(self):
         if self.model is None:
@@ -258,16 +253,33 @@ class TemperaturePredictorInterface:
                 try:
                     current_year = self.df_original['date'].dt.year.max() if 'date' in self.df_original.columns else datetime.datetime.now().year
                     day_of_year_input = int(input_values['day_of_year'])
-                    day_of_year_viz = 365 if not (datetime.date(current_year, 1, 1) + datetime.timedelta(days=365)).year == current_year and day_of_year_input == 366 else day_of_year_input
+                    
+                    is_leap = (current_year % 4 == 0 and current_year % 100 != 0) or (current_year % 400 == 0)
+                    max_days = 366 if is_leap else 365
+                    day_of_year_viz = min(day_of_year_input, max_days)
+
+
                     simulated_date = datetime.datetime(current_year, 1, 1) + datetime.timedelta(days=day_of_year_viz - 1)
-                    try: simulated_date = simulated_date.replace(month=int(input_values['month']))
-                    except ValueError: pass
+                   
+                    try:
+                       
+                        temp_date_month_check = datetime.datetime(current_year, int(input_values['month']), 1)
+                        if simulated_date.month == temp_date_month_check.month:
+                            
+                             pass
+                        else:
+                             
+                             pass 
+                    except ValueError: 
+                        pass
                 except ValueError as ve:
-                     messagebox.showwarning("Aviso de Data", f"Não foi possível gerar data exata para visualização ({ve}). Usando data aproximada.")
-                     simulated_date = datetime.datetime(current_year, int(input_values['month']), 1)
+                    messagebox.showwarning("Aviso de Data", f"Não foi possível gerar data exata para visualização ({ve}). Usando data aproximada.")
+                    
+                    simulated_date = datetime.datetime(current_year, int(input_values.get('month', 1)), 1) # Default to Jan 1st if month is also problematic
                 self.update_plot(simulated_date, predicted_temp)
         except ValueError: messagebox.showerror("Erro de Entrada", "Por favor, insira valores numéricos válidos.")
         except Exception as e: messagebox.showerror("Erro na Predição", f"Ocorreu um erro: {e}")
+
 
     def plot_initial_data(self):
         self.ax.clear()
@@ -279,16 +291,16 @@ class TemperaturePredictorInterface:
         self.fig.autofmt_xdate(); self.canvas_plot.draw()
 
     def update_plot(self, prediction_date, predicted_temp):
-        self.plot_initial_data()
-        self.ax.plot(prediction_date, predicted_temp, 'o', color='red', markersize=8, label=f'Predição ({prediction_date.strftime("%d/%m")}): {predicted_temp:.2f}°C')
+        self.plot_initial_data() 
+        self.ax.plot(prediction_date, predicted_temp, 'o', color='red', markersize=8, label=f'Predição ({prediction_date.strftime("%d/%m/%Y")}): {predicted_temp:.2f}°C')
         self.ax.legend(loc='upper left'); self.fig.autofmt_xdate(); self.canvas_plot.draw()
 
-# --- Interface do Simulador de Abrigo ---
+
 class ShelterSimulatorInterface:
     def __init__(self, master_frame):
         self.master = master_frame
         self.master.configure(style="Tab.TFrame")
-        self.shelters = [dict(s) for s in SHELTERS_DATA] 
+        self.shelters = [dict(s) for s in SHELTERS_DATA]
 
         control_frame = ttk.LabelFrame(self.master, text="Critérios de Busca e Controlo", padding="10", style="TLabelframe")
         control_frame.pack(pady=10, padx=10, fill="x")
@@ -297,9 +309,9 @@ class ShelterSimulatorInterface:
         recommendation_frame = ttk.LabelFrame(self.master, text="Abrigo Recomendado", padding="10", style="TLabelframe")
         recommendation_frame.pack(pady=10, padx=10, fill="x")
 
-        input_criteria_frame = ttk.Frame(control_frame, style="TFrame")
+        input_criteria_frame = ttk.Frame(control_frame, style="TFrame") 
         input_criteria_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        simulation_buttons_frame = ttk.Frame(control_frame, style="TFrame")
+        simulation_buttons_frame = ttk.Frame(control_frame, style="TFrame") 
         simulation_buttons_frame.pack(side=tk.RIGHT, padx=5)
 
         ttk.Label(input_criteria_frame, text="Nº de Pessoas:", style="TLabel").grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -311,13 +323,14 @@ class ShelterSimulatorInterface:
         safety_options = ["Qualquer"] + list(SAFETY_LEVEL_MAP.keys())
         self.safety_priority_combo = ttk.Combobox(input_criteria_frame, textvariable=self.safety_priority_var, values=safety_options, state="readonly", width=12, font=FONT_INPUT_NORMAL)
         self.safety_priority_combo.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-        
+
         self.resource_vars = {}
         ttk.Label(input_criteria_frame, text="Recursos Essenciais:", style="TLabel").grid(row=2, column=0, columnspan=2, padx=5, pady=(10,0), sticky="w")
         resources_frame = ttk.Frame(input_criteria_frame, style="TFrame")
         resources_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=2, sticky="w")
         for i, resource_name in enumerate(POSSIBLE_RESOURCES):
             var = tk.BooleanVar()
+            
             cb = ttk.Checkbutton(resources_frame, text=resource_name.replace("_", " ").capitalize(), variable=var, style="TCheckbutton")
             cb.pack(side=tk.LEFT, padx=3)
             self.resource_vars[resource_name] = var
@@ -325,12 +338,12 @@ class ShelterSimulatorInterface:
 
         self.find_shelter_button = ttk.Button(simulation_buttons_frame, text="Encontrar Melhor Abrigo", command=self.find_best_shelter, style="Accent.TButton")
         self.find_shelter_button.pack(pady=5, fill=tk.X)
-        self.simulate_occupancy_button = ttk.Button(simulation_buttons_frame, text="Simular Ocupação", command=self.simulate_shelter_occupancy)
+        self.simulate_occupancy_button = ttk.Button(simulation_buttons_frame, text="Simular Ocupação", command=self.simulate_shelter_occupancy) # Default style
         self.simulate_occupancy_button.pack(pady=5, fill=tk.X)
 
         cols = ("id", "name", "capacity_total", "capacity_current", "available", "safety_level", "resources")
         col_names = ("ID", "Nome do Abrigo", "Cap. Total", "Ocupação", "Vagas", "Segurança", "Recursos")
-        col_widths = (50, 200, 80, 80, 60, 80, 200)
+        col_widths = (50, 200, 80, 80, 60, 80, 200) 
         self.shelter_tree = ttk.Treeview(list_frame, columns=cols, show="headings", height=7)
         for col, name, width in zip(cols, col_names, col_widths):
             self.shelter_tree.heading(col, text=name)
@@ -339,9 +352,9 @@ class ShelterSimulatorInterface:
         self.shelter_tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
         self.shelter_tree.pack(fill="both", expand=True)
-        self.shelter_tree.tag_configure('recommended', background='lightgreen')
-        self.recommended_shelter_label = ttk.Label(recommendation_frame, text="Nenhum abrigo recomendado ainda. Ajuste os critérios e procure.", style="Result.TLabel", wraplength=600, justify="center", font=('Helvetica', 11))
-        self.recommended_shelter_label.pack(pady=10)
+        self.shelter_tree.tag_configure('recommended', background='lightgreen', foreground='black') 
+        self.recommended_shelter_label = ttk.Label(recommendation_frame, text="Nenhum abrigo recomendado ainda. Ajuste os critérios e procure.", style="Result.TLabel", wraplength=750, justify="center", font=('Helvetica', 11)) # Increased wraplength
+        self.recommended_shelter_label.pack(pady=10, padx=5) 
         self.populate_shelter_tree()
 
     def populate_shelter_tree(self, recommended_id=None):
@@ -356,8 +369,9 @@ class ShelterSimulatorInterface:
         for shelter in self.shelters:
             change = random.randint(-shelter["capacity_total"] // 4, shelter["capacity_total"] // 4)
             shelter["capacity_current"] = max(0, min(shelter["capacity_current"] + change, shelter["capacity_total"]))
-        self.populate_shelter_tree()
+        self.populate_shelter_tree() 
         self.recommended_shelter_label.config(text="Ocupação dos abrigos simulada. Procure novamente se necessário.")
+
 
     def find_best_shelter(self):
         try:
@@ -365,23 +379,28 @@ class ShelterSimulatorInterface:
             if num_people <= 0: messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser maior que zero."); return
         except ValueError: messagebox.showerror("Entrada Inválida", "Número de pessoas deve ser um valor numérico."); return
         required_resources = [res_name for res_name, var in self.resource_vars.items() if var.get()]
-        safety_priority = self.safety_priority_var.get()
+        safety_priority_str = self.safety_priority_var.get()
+
         candidate_shelters = []
         for shelter in self.shelters:
             available_capacity = shelter["capacity_total"] - shelter["capacity_current"]
             if available_capacity < num_people: continue
             if not all(req_res in shelter["resources"] for req_res in required_resources): continue
-            shelter_safety_val = SAFETY_LEVEL_MAP.get(shelter["safety_level"], 0)
-            if safety_priority != "Qualquer":
-                priority_val = SAFETY_LEVEL_MAP.get(safety_priority, 0)
+
+            shelter_safety_val = SAFETY_LEVEL_MAP.get(shelter["safety_level"].lower(), 0) 
+            if safety_priority_str != "Qualquer":
+                priority_val = SAFETY_LEVEL_MAP.get(safety_priority_str.lower(), 0) 
                 if shelter_safety_val < priority_val: continue
-                if priority_val == SAFETY_LEVEL_MAP["média"] and shelter_safety_val == SAFETY_LEVEL_MAP["baixa"]: continue
-            score = shelter_safety_val * 100 + (available_capacity - num_people) 
+         
+            score = (shelter_safety_val * 1000) + (available_capacity - num_people) 
             candidate_shelters.append((score, shelter))
+
         if not candidate_shelters:
             self.recommended_shelter_label.config(text="Nenhum abrigo encontrado que corresponda a todos os critérios.")
-            self.populate_shelter_tree(); return
-        candidate_shelters.sort(key=lambda x: x[0], reverse=True)
+            self.populate_shelter_tree() 
+            return
+
+        candidate_shelters.sort(key=lambda x: x[0], reverse=True) 
         best_shelter_data = candidate_shelters[0][1]
         recommendation_text = (f"Melhor Abrigo Encontrado: {best_shelter_data['name']} (ID: {best_shelter_data['id']})\n"
                                f"Vagas Disponíveis: {best_shelter_data['capacity_total'] - best_shelter_data['capacity_current']}\n"
@@ -390,106 +409,146 @@ class ShelterSimulatorInterface:
         self.recommended_shelter_label.config(text=recommendation_text)
         self.populate_shelter_tree(recommended_id=best_shelter_data["id"])
 
-# --- Interface de Links Úteis ---
 class UsefulLinksInterface:
     def __init__(self, master_frame):
         self.master = master_frame
-        self.master.configure(style="Tab.TFrame")
+        self.master.configure(style="Tab.TFrame") 
 
+       
         title_label = ttk.Label(self.master, text="Links Úteis para Techanomachine", style="MainTitle.TLabel", anchor="center")
         title_label.pack(pady=20, fill="x")
 
+       
         buttons_frame = ttk.Frame(self.master, style="Tab.TFrame")
         buttons_frame.pack(expand=True, pady=20)
 
         button_configs = [
-            {"text": "Techanomachine - Pesquisa Geral", "query": "techanomachine"},
-            {"text": "Techanomachine - Notícias", "query": "techanomachine notícias"},
-            {"text": "Techanomachine - Imagens", "query": "techanomachine", "type": "isch"}, # isch para imagens
-            {"text": "Techanomachine - Vídeos", "query": "techanomachine", "type": "vid"}    # vid para vídeos (ou tbm=vid)
+            
+            
+           
+            {"text": "Repositório GS2025IOT", "query": "https://github.com/renan-b-eth/GS2025IOT"},
+            {"text": "Modelo Teachable Machine", "query": "https://teachablemachine.withgoogle.com/models/wa7L7N86o/"},
+            
+            
+            {"text": "Techanomachine no YouTube", "query": "https://www.youtube.com/results?search_query=techanomachine"}
         ]
 
         for config in button_configs:
             btn = ttk.Button(
                 buttons_frame,
                 text=config["text"],
+                # For direct URLs like the YouTube link, config.get("type") will be None, which is handled by open_link.
                 command=lambda q=config["query"], t=config.get("type"): self.open_link(q, t),
-                style="Link.TButton",
-                width=35
+                style="Link.TButton", # Uses Link.TButton style configured in SensorDashboardApp
+                width=35 # This width is kept from your original code
             )
-            btn.pack(pady=10, ipady=5) # ipady para altura interna do botão
+            btn.pack(pady=10, ipady=5)
 
-    def open_link(self, query, search_type=None):
-        """Abre um link de pesquisa do Google numa nova aba do navegador."""
-        base_url = "https://www.google.com/search?q="
-        search_query = query.replace(" ", "+")
-        url = f"{base_url}{search_query}"
-        if search_type:
-            url += f"&tbm={search_type}" # tbm=isch (imagens), tbm=vid (vídeos), tbm=nws (notícias)
-            if search_type == "isch" and query.endswith(" notícias"): # Ajuste para notícias em imagens
-                 url = f"{base_url}{query.replace(' notícias', '').replace(' ', '+')}&tbm=isch" # Remove notícias da query de imagem
-            elif search_type == "vid" and query.endswith(" notícias"):
-                 url = f"{base_url}{query.replace(' notícias', '').replace(' ', '+')}&tbm=vid"
+    def open_link(self, query_or_url, search_type=None):
+        """Abre um link de pesquisa do Google ou um URL direto numa nova aba do navegador."""
+        final_url_to_open = ""
 
+        if query_or_url.startswith("http://") or query_or_url.startswith("https://"):
+            # This is a direct URL (like the new YouTube link, GitHub, Teachable Machine)
+            final_url_to_open = query_or_url
+        else:
+            # This is a search query (original logic for Google search, if any such buttons were kept/added)
+            query_argument = query_or_url
+
+            base_url = "https://www.google.com/search?q="
+            search_query_param_str = query_argument.replace(" ", "+")
+            current_search_url = f"{base_url}{search_query_param_str}"
+
+            if search_type:
+                current_search_url += f"&tbm={search_type}"
+                # Special handling for queries ending in " notícias" combined with specific search_types
+                if query_argument.endswith(" notícias"):
+                    if search_type == "isch":
+                        term_without_noticias = query_argument.replace(' notícias', '').replace(' ', '+')
+                        current_search_url = f"{base_url}{term_without_noticias}&tbm=isch"
+                    elif search_type == "vid":
+                        term_without_noticias = query_argument.replace(' notícias', '').replace(' ', '+')
+                        current_search_url = f"{base_url}{term_without_noticias}&tbm=vid"
+            final_url_to_open = current_search_url
 
         try:
-            webbrowser.open_new_tab(url)
+            webbrowser.open_new_tab(final_url_to_open)
         except Exception as e:
             messagebox.showerror("Erro ao Abrir Link", f"Não foi possível abrir o link:\n{e}")
 
 
-# --- Aplicação Principal com Abas ---
 class SensorDashboardApp:
     def __init__(self, root, model_pred, features_pred, df_pred):
         self.root = root
         self.root.title("Dashboard Completo: Sensores, Previsão, Abrigos e Links")
-        self.root.geometry("1000x800") # Aumentado para a nova aba e melhor visualização
+        self.root.geometry("1000x800")
         self.root.configure(bg=COLOR_WINDOW_BG)
         self.root.minsize(950, 750)
 
         style = ttk.Style()
-        try: style.theme_use('clam')
-        except tk.TclError: style.theme_use(style.theme_names()[0])
+        try: style.theme_use('clam') # 'clam', 'alt', 'default', 'classic'
+        except tk.TclError: style.theme_use(style.theme_names()[0]) # Fallback to any available theme
 
+        # General Styles
         style.configure("TFrame", background=COLOR_WINDOW_BG)
         style.configure("Gauge.TFrame", background=COLOR_FRAME_BG, relief="groove", borderwidth=1)
-        style.configure("TLabel", background=COLOR_WINDOW_BG, foreground=COLOR_LABEL_TEXT, font=FONT_LABEL_NORMAL)
-        style.configure("MainTitle.TLabel", font=FONT_MAIN_TITLE, background=COLOR_WINDOW_BG, foreground="#333333")
+        style.configure("TLabel", background=COLOR_WINDOW_BG, foreground=COLOR_LABEL_TEXT, font=FONT_LABEL_NORMAL) # Default for most labels
+        style.configure("MainTitle.TLabel", font=FONT_MAIN_TITLE, background=COLOR_WINDOW_BG, foreground="#333333", anchor="center") # Ensure anchor for tab titles
         style.configure("GaugeTitle.TLabel", font=FONT_GAUGE_TITLE, background=COLOR_FRAME_BG, foreground="#424242")
-        style.configure("GaugeValue.TLabel", font=FONT_GAUGE_VALUE, background=COLOR_FRAME_BG)
+        style.configure("GaugeValue.TLabel", font=FONT_GAUGE_VALUE, background=COLOR_FRAME_BG) # Will be colored by gauge logic if needed
         style.configure("TNotebook", background=COLOR_WINDOW_BG, borderwidth=0)
-        style.configure("TNotebook.Tab", font=FONT_TAB_HEADER, padding=[10, 5], background=COLOR_TAB_BG, foreground="#555555")
+        style.configure("TNotebook.Tab", font=FONT_TAB_HEADER, padding=[12, 6], background=COLOR_TAB_BG, foreground="#555555") # Increased padding
         style.map("TNotebook.Tab", background=[("selected", COLOR_FRAME_BG)], foreground=[("selected", "#00796B")])
-        style.configure("Tab.TFrame", background=COLOR_FRAME_BG)
-        style.configure("TLabelframe", background=COLOR_FRAME_BG, bordercolor="#BDBDBD", relief="solid")
+        style.configure("Tab.TFrame", background=COLOR_FRAME_BG) # Background for the content area of tabs
+        style.configure("TLabelframe", background=COLOR_FRAME_BG, bordercolor="#BDBDBD", relief="solid", borderwidth=1) # Added borderwidth
         style.configure("TLabelframe.Label", background=COLOR_FRAME_BG, foreground="#455A64", font=('Helvetica', 11, 'bold'))
-        style.configure("Accent.TButton", font=FONT_BUTTON_NORMAL, background="#00796B", foreground="white")
-        style.map("Accent.TButton", background=[('active', '#004D40')])
-        style.configure("Result.TLabel", background=COLOR_FRAME_BG, anchor="center")
-        style.configure("TEntry", font=FONT_INPUT_NORMAL)
-        style.configure("TCombobox", font=FONT_INPUT_NORMAL)
-        style.configure("TCheckbutton", background=COLOR_FRAME_BG, font=FONT_LABEL_NORMAL)
-        style.configure('Treeview.Heading', background=COLOR_TREEVIEW_HEADING, font=('Helvetica', 10, 'bold'))
-        # Estilo para os botões de link
-        style.configure("Link.TButton", font=FONT_LINK_BUTTON, background=COLOR_LINK_BUTTON_BG, foreground=COLOR_LINK_BUTTON_FG)
-        style.map("Link.TButton", background=[('active', '#1976D2')]) # Cor mais escura ao clicar
+        style.configure("Accent.TButton", font=FONT_BUTTON_NORMAL, background="#00796B", foreground="white", padding=5) # Added padding
+        style.map("Accent.TButton", background=[('active', '#004D40'), ('disabled', '#B0BEC5')])
+        style.configure("TButton", font=FONT_BUTTON_NORMAL, padding=5) # Default TButton style
+        style.map("TButton", background=[('active', '#E0E0E0')])
+        style.configure("Result.TLabel", background=COLOR_FRAME_BG, anchor="center") # For prediction result etc.
+        style.configure("TEntry", font=FONT_INPUT_NORMAL, padding=3)
+        style.configure("TCombobox", font=FONT_INPUT_NORMAL) # ttk.Combobox list style is system dependent
+        style.map("TCombobox", fieldbackground=[('readonly', COLOR_FRAME_BG)])
+        style.configure("TCheckbutton", background=COLOR_FRAME_BG, font=FONT_LABEL_NORMAL) # Ensure checkbuttons have correct bg
+        style.configure('Treeview', rowheight=25, fieldbackground=COLOR_FRAME_BG) # Treeview general
+        style.configure('Treeview.Heading', background=COLOR_TREEVIEW_HEADING, font=('Helvetica', 10, 'bold'), padding=5)
+        style.map('Treeview.Heading', background=[('active', '#CCCCCC')])
+
+        # Estilo para os botões de link (usado por UsefulLinksInterface)
+        style.configure("Link.TButton", font=FONT_LINK_BUTTON, background=COLOR_LINK_BUTTON_BG, foreground=COLOR_LINK_BUTTON_FG, padding=6)
+        style.map("Link.TButton",
+                  background=[('active', '#1976D2'), ('!active', COLOR_LINK_BUTTON_BG)],
+                  foreground=[('!active', COLOR_LINK_BUTTON_FG)])
 
 
         self.notebook = ttk.Notebook(self.root)
 
+        # Aba de Sensores
         self.sensors_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
         self.notebook.add(self.sensors_tab_frame, text=" Sensores em Tempo Real ")
         self._setup_sensors_ui(self.sensors_tab_frame)
 
-        if model_pred is not None:
+        # Aba de Previsão
+        if model_pred is not None and features_pred and df_pred is not None: # Check all are valid
             self.predictor_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
             self.notebook.add(self.predictor_tab_frame, text=" Previsão de Temperatura ")
             self.temp_predictor_ui = TemperaturePredictorInterface(self.predictor_tab_frame, model_pred, features_pred, df_pred)
         else:
             error_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
             self.notebook.add(error_tab_frame, text=" Previsão Indisponível ")
-            ttk.Label(error_tab_frame, text="A funcionalidade de previsão de temperatura não pôde ser carregada.", font=("Helvetica", 12), style="TLabel", wraplength=380, justify="center").pack(expand=True, padx=20, pady=20)
+            error_message = "A funcionalidade de previsão de temperatura não pôde ser carregada.\n"
+            if not model_pred : error_message += "- Modelo não treinado.\n"
+            if not features_pred: error_message += "- Lista de features vazia.\n"
+            if df_pred is None : error_message += "- DataFrame histórico ausente.\n"
+            if not os.path.exists(DATA_FILE): error_message += f"- Ficheiro de dados '{DATA_FILE}' não encontrado."
 
+            ttk.Label(error_tab_frame, text=error_message,
+                      font=("Helvetica", 12), style="TLabel", wraplength=500, justify="center",
+                      background=COLOR_FRAME_BG, foreground="red" ).pack(expand=True, padx=20, pady=20)
+
+
+        # Aba Simulador de Abrigo
         self.shelter_sim_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
         self.notebook.add(self.shelter_sim_tab_frame, text=" Simulador de Abrigo ")
         self.shelter_sim_ui = ShelterSimulatorInterface(self.shelter_sim_tab_frame)
@@ -497,24 +556,24 @@ class SensorDashboardApp:
         # Aba de Links Úteis
         self.useful_links_tab_frame = ttk.Frame(self.notebook, style="Tab.TFrame")
         self.notebook.add(self.useful_links_tab_frame, text=" Links Úteis ")
-        self.useful_links_ui = UsefulLinksInterface(self.useful_links_tab_frame)
+        self.useful_links_ui = UsefulLinksInterface(self.useful_links_tab_frame) # Instantiation uses the modified class
 
 
         self.notebook.pack(expand=True, fill='both', padx=10, pady=10)
 
     def _setup_sensors_ui(self, parent_frame):
-        main_title_label = ttk.Label(parent_frame, text="Monitor de Sensores", style="MainTitle.TLabel")
-        main_title_label.pack(pady=20)
-        gauges_container = ttk.Frame(parent_frame, style="TFrame")
+        main_title_label = ttk.Label(parent_frame, text="Monitor de Sensores Ambientais", style="MainTitle.TLabel")
+        main_title_label.pack(pady=(15, 25)) # More space after title
+        gauges_container = ttk.Frame(parent_frame, style="Tab.TFrame") # Use Tab.TFrame for consistent bg
         gauges_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-        for i in range(3): gauges_container.columnconfigure(i, weight=1)
+        for i in range(3): gauges_container.columnconfigure(i, weight=1, uniform="gauge") # Uniform ensures equal width
         gauges_container.rowconfigure(0, weight=1)
-        self.temp_gauge = Gauge(gauges_container, "Temperatura", "°C", TEMP_MIN, TEMP_MAX, TEMP_ALERT_THRESHOLD, is_float=True)
-        self.temp_gauge.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-        self.occ_gauge = Gauge(gauges_container, "Ocupação", "%", OCC_MIN, OCC_MAX, OCC_ALERT_THRESHOLD)
-        self.occ_gauge.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
-        self.hum_gauge = Gauge(gauges_container, "Umidade", "%", HUM_MIN_SENSOR, HUM_MAX_SENSOR, HUM_ALERT_THRESHOLD_SENSOR)
-        self.hum_gauge.grid(row=0, column=2, padx=10, pady=10, sticky="nsew")
+        self.temp_gauge = Gauge(gauges_container, "Temperatura Ambiente", "°C", TEMP_MIN, TEMP_MAX, TEMP_ALERT_THRESHOLD, is_float=True)
+        self.temp_gauge.grid(row=0, column=0, padx=15, pady=15, sticky="nsew")
+        self.occ_gauge = Gauge(gauges_container, "Ocupação Estimada", "%", OCC_MIN, OCC_MAX, OCC_ALERT_THRESHOLD)
+        self.occ_gauge.grid(row=0, column=1, padx=15, pady=15, sticky="nsew")
+        self.hum_gauge = Gauge(gauges_container, "Umidade Relativa", "%", HUM_MIN_SENSOR, HUM_MAX_SENSOR, HUM_ALERT_THRESHOLD_SENSOR)
+        self.hum_gauge.grid(row=0, column=2, padx=15, pady=15, sticky="nsew")
         self.update_all_sensors_periodically()
 
     def update_all_sensors_periodically(self):
@@ -525,7 +584,11 @@ class SensorDashboardApp:
 
 # --- Ponto de Entrada Principal ---
 if __name__ == "__main__":
+    # Tenta carregar e treinar o modelo. model_ready será True/False.
+    # model_predictor, features_predictor, df_predictor_original são atualizados globalmente.
     model_ready = load_and_train_prediction_model()
+
     root_app = tk.Tk()
+    # Passa as variáveis globais (possivelmente None se o carregamento falhar) para a app
     app_instance = SensorDashboardApp(root_app, model_predictor, features_predictor, df_predictor_original)
     root_app.mainloop()

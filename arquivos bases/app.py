@@ -42,10 +42,7 @@ print(df.head())
 print("\nEstatísticas descritivas:")
 print(df.describe())
 
-# --- PARTE 2: Pré-processamento e Treinamento do Modelo ---
-
-# Selecionar features (variáveis independentes) e target (variável dependente)
-features = ['Hour', 'DayOfYear', 'Month'] # 'Year' pode ser usado se o modelo precisar aprender tendências anuais
+features = ['Hour', 'DayOfYear', 'Month'] 
 target = 'Temperature'
 
 X = df[features]
@@ -57,7 +54,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 print(f"\nTamanho do conjunto de treino: {len(X_train)}")
 print(f"Tamanho do conjunto de teste: {len(X_test)}")
 
-model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1) # n_jobs=-1 usa todos os núcleos
+model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1) 
 model.fit(X_train, y_train)
 
 # Avaliar o modelo
@@ -72,7 +69,7 @@ print(f"Coeficiente de Determinação (R²): {r2:.2f}")
 # Visualizar algumas predições vs. valores reais
 plt.figure(figsize=(10, 6))
 plt.scatter(y_test, y_pred, alpha=0.3)
-plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2) # Linha de identidade
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2) 
 plt.xlabel("Temperatura Real")
 plt.ylabel("Temperatura Predita")
 plt.title("Temperatura Real vs. Predita")
@@ -80,17 +77,16 @@ plt.grid(True)
 plt.show()
 
 
-# --- PARTE 3: Simulador com Interface Gráfica (Tkinter) ---
 
 class TemperaturePredictorApp:
     def __init__(self, master):
         self.master = master
         master.title("Simulador de Predição de Temperatura")
-        master.geometry("800x700") # Aumentar o tamanho da janela
-        master.configure(bg='#f0f0f0') # Cor de fundo
+        master.geometry("800x700")
+        master.configure(bg='#f0f0f0') 
 
-        self.model = model # O modelo treinado
-        self.features = features # As features usadas no treinamento
+        self.model = model 
+        self.features = features
 
         # Estilos
         self.style = ttk.Style()
@@ -206,9 +202,9 @@ class TemperaturePredictorApp:
 
     def update_plot(self, hour, day_of_year, month, predicted_temp):
         self.ax.clear()
-        # Plotar os dados históricos (ou uma amostra deles para não sobrecarregar)
+        
         self.ax.scatter(df['Hour'], df['Temperature'], alpha=0.1, label='Dados Históricos')
-        # Plotar o ponto predito
+       
         self.ax.plot(hour, predicted_temp, 'ro', markersize=10, label=f'Predição ({predicted_temp:.2f}°C)')
         self.ax.set_xlabel("Hora do Dia")
         self.ax.set_ylabel("Temperatura (°C)")
@@ -219,9 +215,6 @@ class TemperaturePredictorApp:
 
 
 if __name__ == "__main__":
-    # Certifique-se de que o dataframe 'df' e o 'model' estão definidos globalmente ou passados para a classe
-    # Já estão definidos no escopo global para este script.
-
     root = tk.Tk()
     app = TemperaturePredictorApp(root)
     root.mainloop()
