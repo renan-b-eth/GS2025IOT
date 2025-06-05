@@ -1,10 +1,25 @@
 # Dashboard de Monitoramento Climático e Gestão de Abrigos
 ### Projeto para a Global Solution 2025 - FIAP
+## 👥 Desenvolvedores
+
+Este projeto foi desenvolvido com dedicação pela seguinte equipe:
+
+| Nome Completo                     | RM      |
+|-----------------------------------|---------|
+| **Glenda Delfy Vela Mamani** | 552667  |
+| **Lucas Alcântara Carvalho** | 95111   |
+| **Renan Bezerra dos Santos** | 553228  |
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
 Um dashboard multifuncional desenvolvido em Python com a biblioteca Tkinter. Esta aplicação foi criada para oferecer uma solução integrada de monitoramento ambiental, previsão de temperatura com Machine Learning e gestão de recursos de emergência, como abrigos.
+
+## 🎥 Vídeo de Demonstração
+
+Assista a uma demonstração completa das funcionalidades da nossa aplicação no YouTube.
+
+**[Clique aqui para assistir ao vídeo de demonstração](https://youtu.be/hiNColLgkus)**
 
 ## 🌟 Principais Funcionalidades
 
